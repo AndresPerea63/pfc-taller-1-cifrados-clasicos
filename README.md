@@ -19,7 +19,7 @@ la nota.
 | | |
 | | |
 | | |
-| | |
+| Diego Fernando Perez|202559956 |
 
 ## Cómo está organizado el proyecto
 
