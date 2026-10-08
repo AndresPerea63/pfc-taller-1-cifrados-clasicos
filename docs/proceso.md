@@ -173,3 +173,195 @@ concatenación con `desplazar(m.head)`. Por eso cada llamado debe esperar en la
 pila a que termine el siguiente, y la pila crece una posición por cada letra
 del mensaje: para $n$ letras hay $n+1$ llamados activos a la vez, es decir,
 espacio $O(n)$.
+
+# Informe de proceso
+
+## Cómo se leen las trazas
+
+Se usa el **modelo de sustitución**: en cada paso se reemplaza una llamada por el cuerpo de la función y se sigue reduciendo.
+
+- La columna **Pendientes** cuenta las operaciones que quedan esperando el resultado de una llamada. El valor más alto de esa columna es el **espacio** del proceso.
+- La **pila de llamados** muestra qué llamadas están abiertas (todavía no devolvieron) en un punto de la ejecución. Cada una ocupa un marco.
+- En las trazas, `"h"` es una letra ya cifrada, `+` es la concatenación de cadenas y $n$ es el número de caracteres del mensaje.
+
+---
+
+## Punto 4: `desplazamientoProbable` y `romperCesar`
+
+```scala
+def desplazamientoProbable(m: Mensaje): Int = {
+  val fs = frecuencias(m)
+  if (fs.isEmpty) 0
+  else {
+    val (letraMasFrecuente, _) = fs.head
+    (letraMasFrecuente - 'e' + letras) % letras
+  }
+}
+
+def romperCesar(m: Mensaje): Mensaje =
+  cesar(m, -desplazamientoProbable(m))
+```
+
+Ninguna de las dos es recursiva por sí misma: llaman a `frecuencias` (punto 3) y a `cesar` (punto 1).
+
+- `fs` es un `val`: `frecuencias(m)` se evalúa **una sola vez**, en el punto de la definición. Con un `def` se evaluaría dos veces, en `fs.isEmpty` y en `fs.head`.
+- `fs.head` es la letra más frecuente, porque `frecuencias` ordena de mayor a menor y, en empate, alfabéticamente.
+- `letras` vale 26. Restar `'e'` da la distancia entre la letra más frecuente y la `e`, que va de $-4$ a $21$; sumar `letras` evita el resultado negativo y el `%` lo deja entre 0 y 25.
+
+### Traza de `romperCesar("hvh")`
+
+| Paso | Expresión | Qué se hizo |
+|------|-----------|-------------|
+| 0 | `romperCesar("hvh")` | — |
+| 1 | `cesar("hvh", -desplazamientoProbable("hvh"))` | se reemplaza por el cuerpo; los argumentos se evalúan de izquierda a derecha |
+| 2 | `cesar("hvh", -3)` | `frecuencias("hvh")` es `List((h,2), (v,1))`; la letra más frecuente es `h`; $(7 - 4 + 26) \bmod 26 = 3$ |
+| 3 | `"ese"` | `cesar` con $-3$: `h`→`e`, `v`→`s`, `h`→`e` |
+
+Con empate, en `"hhhaaa"` `frecuencias` devuelve `List((a,3), (h,3))`: gana la `a` y el desplazamiento es $(0 - 4 + 26) \bmod 26 = 22$. Sin letras, `fs` está vacía y el resultado es 0.
+
+### Estado de la pila de llamados
+
+| Punto de la ejecución | Pila (de abajo hacia arriba) |
+|-----------------------|------------------------------|
+| entra `romperCesar("hvh")` | `romperCesar` |
+| evalúa el argumento `-desplazamientoProbable(m)` | `romperCesar`, `desplazamientoProbable` |
+| calcula `fs` | `romperCesar`, `desplazamientoProbable`, `frecuencias` |
+| `frecuencias` devuelve | `romperCesar`, `desplazamientoProbable` |
+| `desplazamientoProbable` devuelve 3 | `romperCesar` |
+| llega al fondo de `cesar("hvh", -3)` | `romperCesar`, `cesar("hvh")`, `cesar("vh")`, `cesar("h")`, `cesar("")` |
+| `cesar` devuelve `"ese"` | `romperCesar`, y luego vacía |
+
+```mermaid
+flowchart TD
+    A["romperCesar('hvh')"] --> B["desplazamientoProbable('hvh')"]
+    B --> C["frecuencias('hvh') = List((h,2),(v,1))"]
+    C --> D["letra más frecuente: h, desplazamiento 3"]
+    D --> E["cesar('hvh', -3)"]
+    E --> F["'ese'"]
+```
+
+**Proceso:** `desplazamientoProbable` no deja operaciones pendientes. `romperCesar` termina en `cesar`, que es recursiva lineal, así que su espacio es $\sim n$.
+
+---
+
+## Punto 5: `combinaciones` y `vigenere`
+
+### `combinaciones` (recursión lineal)
+
+```scala
+def combinaciones(n: Int, a: Int): BigInt =
+  if (n == 0) BigInt(1)
+  else if (n == 1) BigInt(a)
+  else BigInt(a - 1) * combinaciones(n - 1, a)
+```
+
+La multiplicación por $(a - 1)$ queda esperando el resultado de la llamada, como en el `factorial` recursivo.
+
+**Traza de `combinaciones(3, 26)`**
+
+| Paso | Expresión | Pendientes |
+|------|-----------|------------|
+| 0 | `combinaciones(3, 26)` | 0 |
+| 1 | `25 * combinaciones(2, 26)` | 1 |
+| 2 | `25 * (25 * combinaciones(1, 26))` | 2 |
+| 3 | `25 * (25 * 26)` | 2 |
+| 4 | `25 * 650` | 1 |
+| 5 | `16250` | 0 |
+
+**Pila de llamados en el punto más hondo (paso 2)**
+
+| Marco | `n` | ¿`n == 0`? | ¿`n == 1`? | Devuelve |
+|-------|-----|-----------|-----------|----------|
+| 1 | 3 | no | no | `25 *` (valor del marco 2) |
+| 2 | 2 | no | no | `25 *` (valor del marco 3) |
+| 3 | 1 | no | sí | `26` |
+
+```mermaid
+sequenceDiagram
+    participant C3 as combinaciones(3, 26)
+    participant C2 as combinaciones(2, 26)
+    participant C1 as combinaciones(1, 26)
+
+    C3->>C2: llama y deja pendiente 25 por el resultado
+    C2->>C1: llama y deja pendiente 25 por el resultado
+    C1-->>C2: devuelve 26
+    C2-->>C3: devuelve 25 * 26 = 650
+    C3-->>C3: devuelve 25 * 650 = 16250
+```
+
+**Proceso:** recursivo lineal. Tiempo $\sim n$, espacio $\sim n$ (son $n$ marcos, uno por cada valor de $n$ hasta llegar a 1).
+
+### `vigenere` (recursión lineal)
+
+```scala
+def vigenere(m: Mensaje, clave: Clave): Mensaje = {
+  def cifrar(resto: Mensaje, pos: Int): Mensaje =
+    if (resto.isEmpty) ""
+    else if (esMinuscula(resto.head)) {
+      val desplazamiento = clave(pos % clave.length) - primera
+      cesar(resto.head.toString, desplazamiento) + cifrar(resto.tail, pos + 1)
+    } else
+      resto.head.toString + cifrar(resto.tail, pos)
+
+  if (clave.isEmpty) m else cifrar(m, 0)
+}
+```
+
+`pos` cuenta cuántas letras del mensaje llevamos y sirve para escoger la letra de la clave: `pos % clave.length` hace que la clave se repita. Cada letra se cifra con `cesar` sobre una cadena de una sola letra; esa llamada abre un marco, devuelve y se cierra antes de seguir, así que no se acumula.
+
+**Traza de `vigenere("hola", "ab")`.** Los desplazamientos de la clave son $0, 1, 0, 1$.
+
+| Paso | Expresión | Pendientes |
+|------|-----------|------------|
+| 0 | `cifrar("hola", 0)` | 0 |
+| 1 | `"h" + cifrar("ola", 1)` | 1 |
+| 2 | `"h" + ("p" + cifrar("la", 2))` | 2 |
+| 3 | `"h" + ("p" + ("l" + cifrar("a", 3)))` | 3 |
+| 4 | `"h" + ("p" + ("l" + ("b" + cifrar("", 4))))` | 4 |
+| 5 | `"h" + ("p" + ("l" + ("b" + "")))` | 4 |
+| 6 | `"hplb"` | 0 |
+
+Cada letra sale de `cesar`: `h` con 0 es `h`, `o` con 1 es `p`, `l` con 0 es `l` y `a` con 1 es `b`.
+
+**Pila de llamados en el punto más hondo (paso 5)**
+
+| Marco | `resto` | `pos` | Devuelve |
+|-------|---------|-------|----------|
+| 1 | `"hola"` | 0 | `"h" +` (valor del marco 2) |
+| 2 | `"ola"` | 1 | `"p" +` (valor del marco 3) |
+| 3 | `"la"` | 2 | `"l" +` (valor del marco 4) |
+| 4 | `"a"` | 3 | `"b" +` (valor del marco 5) |
+| 5 | `""` | 4 | `""` |
+
+```mermaid
+sequenceDiagram
+    participant V1 as cifrar(hola, 0)
+    participant V2 as cifrar(ola, 1)
+    participant V3 as cifrar(la, 2)
+    participant V4 as cifrar(a, 3)
+    participant V5 as cifrar(vacío, 4)
+
+    V1->>V2: h ya cifrada, llama con pos 1
+    V2->>V3: p ya cifrada, llama con pos 2
+    V3->>V4: l ya cifrada, llama con pos 3
+    V4->>V5: b ya cifrada, llama con pos 4
+    V5-->>V4: devuelve cadena vacía
+    V4-->>V3: devuelve b
+    V3-->>V2: devuelve lb
+    V2-->>V1: devuelve plb
+```
+
+Cuando el carácter no es una letra (por ejemplo un espacio), `cifrar` lo copia y llama a `cifrar(resto.tail, pos)` con el **mismo** `pos`. Por eso ese carácter no consume letra de la clave. El informe de corrección muestra ese caso con `"hola mundo"`.
+
+**Proceso:** recursivo lineal. Tiempo $\sim n$, espacio $\sim n$.
+
+---
+
+## Resumen de los puntos 4 y 5
+
+| Función | Proceso | Tiempo | Espacio |
+|---------|---------|--------|---------|
+| `desplazamientoProbable` | llama a `frecuencias`, sin operaciones pendientes propias | $\sim n$ | constante |
+| `romperCesar` | termina llamando a `cesar` | $\sim n$ | $\sim n$ |
+| `combinaciones` | recursivo lineal | $\sim n$ | $\sim n$ |
+| `vigenere` | recursivo lineal | $\sim n$ | $\sim n$ |
