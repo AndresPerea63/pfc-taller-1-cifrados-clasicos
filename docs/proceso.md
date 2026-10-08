@@ -129,3 +129,47 @@ sequenceDiagram
 ```
 
 
+
+
+---
+
+## Punto 1: `cesar` con recursión lineal
+
+```scala
+def cesar(m: Mensaje, k: Int): Mensaje =
+  if (m.isEmpty) "" else desplazar(m.head) + cesar(m.tail, k)
+```
+
+### Traza de `cesar("casa", 3)`
+
+```
+cesar("casa", 3)
+= 'f' + cesar("asa", 3)
+= 'f' + ('d' + cesar("sa", 3))
+= 'f' + ('d' + ('v' + cesar("a", 3)))
+= 'f' + ('d' + ('v' + ('d' + cesar("", 3))))
+= 'f' + ('d' + ('v' + ('d' + "")))
+= 'f' + ('d' + ('v' + "d"))
+= 'f' + ('d' + "vd")
+= 'f' + "dvd"
+= "fdvd"
+```
+
+### Pila de llamados
+
+```mermaid
+graph TD
+  A["cesar('casa', 3): espera 'f' + ..."] --> B["cesar('asa', 3): espera 'd' + ..."]
+  B --> C["cesar('sa', 3): espera 'v' + ..."]
+  C --> D["cesar('a', 3): espera 'd' + ..."]
+  D --> E["cesar('', 3): devuelve ''"]
+```
+
+### ¿Por qué es recursión lineal?
+
+En cada invocación hay un único llamado recursivo, sobre `m.tail`. Además, ese
+llamado no es lo último que se hace: al volver queda pendiente la
+concatenación con `desplazar(m.head)`. Por eso cada llamado debe esperar en la
+pila a que termine el siguiente, y la pila crece una posición por cada letra
+del mensaje: para $n$ letras hay $n+1$ llamados activos a la vez, es decir,
+espacio $O(n)$.

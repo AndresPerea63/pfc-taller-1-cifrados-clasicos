@@ -277,3 +277,26 @@ s_0 = (a_1, \text{List}(a_2, \ldots, a_k)) \implies a_1 = f(\text{List}(a_1))
 $k$ iteraciones, $l = \text{List}()$.
 
 Esto implica que $P_f(L) == \text{maxAux}(L.\text{head}, L.\text{tail}) == f(L)$
+
+
+---
+
+## Punto 1: corrección de `cesar`
+
+Sea $f(m, k)$ la especificación: la cadena que resulta de reemplazar cada letra
+minúscula $c$ de $m$ por la letra $\big((c - a + k) \bmod 26\big) + a$ y de
+dejar igual cualquier otro carácter. Queremos probar que
+$\forall m \in \text{String},\ \forall k \in \mathbb{Z} : P_{cesar}(m, k) == f(m, k)$.
+
+Se hace inducción estructural sobre $m$.
+
+- **Caso base:** $m = \text{""}$. El programa devuelve `""`, y la
+  especificación sobre la cadena vacía también da `""`.
+- **Paso inductivo:** $m = c \cdot m'$. Por hipótesis de inducción,
+  $P_{cesar}(m', k) == f(m', k)$. El programa devuelve
+  `desplazar(c) + cesar(m', k)`, que por la hipótesis es
+  `desplazar(c) + f(m', k)`. Como `desplazar` aplica exactamente la fórmula de
+  la especificación a una letra minúscula, y deja igual cualquier otro
+  carácter, esto es $f(c \cdot m', k)$.
+
+Por lo tanto $P_{cesar}$ es correcto.
