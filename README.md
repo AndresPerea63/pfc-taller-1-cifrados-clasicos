@@ -19,7 +19,8 @@ la nota.
 | | |
 | | |
 | | |
-| Diego Fernando Perez|202559956 |
+| Diego Fernando Perez | 202559956 |
+| Andres David Perea Rios | 202559770 |
 
 ## Cómo está organizado el proyecto
 

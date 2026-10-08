@@ -174,7 +174,10 @@ pila a que termine el siguiente, y la pila crece una posición por cada letra
 del mensaje: para $n$ letras hay $n+1$ llamados activos a la vez, es decir,
 espacio $O(n)$.
 
-# Informe de proceso
+
+---
+
+# Informe de proceso: puntos 4 y 5
 
 ## Cómo se leen las trazas
 

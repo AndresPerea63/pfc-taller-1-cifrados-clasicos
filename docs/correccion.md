@@ -301,7 +301,10 @@ Se hace inducción estructural sobre $m$.
 
 Por lo tanto $P_{cesar}$ es correcto.
 
-# Informe de corrección
+
+---
+
+# Informe de corrección: puntos 4 y 5
 
 ## Cómo se argumenta la corrección
 
