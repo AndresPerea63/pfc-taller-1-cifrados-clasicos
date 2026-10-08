@@ -40,7 +40,21 @@ class CifradosClasicos {
    * Cuando la función esté escrita, anótela con @tailrec: el compilador
    * comprueba que la llamada recursiva sea lo último que hace.
    */
-  final def cesarCola(m: Mensaje, k: Int, acc: Mensaje = ""): Mensaje = ???
+  @tailrec
+  final def cesarCola(m: Mensaje, k: Int, acc: Mensaje = ""): Mensaje = {
+    if (m.isEmpty) acc
+    else {
+      val c = m.head
+  
+      if (esMinuscula(c)) {
+        val desplazamiento = ((c - primera + k) % letras + letras) % letras
+        val nuevaLetra = (primera + desplazamiento).toChar
+        cesarCola(m.tail, k, acc + nuevaLetra.toString)
+      } else {
+        cesarCola(m.tail, k, acc + c.toString)
+      }
+    }
+  }
 
   // Punto 3 -------------------------------------------------------------------
 
@@ -48,7 +62,24 @@ class CifradosClasicos {
    * Cuenta las letras minúsculas del mensaje, de mayor a menor frecuencia y,
    * en empate, en orden alfabético. El recorrido es recursivo de cola.
    */
-  def frecuencias(m: Mensaje): Frecuencias = ???
+  def frecuencias(m: Mensaje): Frecuencias = {
+    @tailrec
+    def contar(resto: Mensaje, acc: Map[Char, Int]): Map[Char, Int] = {
+      if (resto.isEmpty) acc
+      else {
+        val c = resto.head
+
+        if (esMinuscula(c))
+          contar(resto.tail, acc.updated(c, acc.getOrElse(c, 0) + 1))
+        else
+          contar(resto.tail, acc)
+      }
+    }
+
+    contar(m, Map.empty)
+      .toList
+      .sortBy { case (letra, cantidad) => (-cantidad, letra) }
+  }
 
   // Punto 4 -------------------------------------------------------------------
 

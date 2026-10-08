@@ -301,6 +301,93 @@ Se hace inducción estructural sobre $m$.
 
 Por lo tanto $P_{cesar}$ es correcto.
 
+---
+
+
+## Punto 2. Corrección de `cesarCola`
+
+Para demostrar la corrección de `cesarCola`, se considera el siguiente invariante:
+
+> En cada llamada, el acumulador `acc` contiene exactamente el resultado del cifrado César con desplazamiento `k` de la parte del mensaje que ya ha sido procesada.
+
+### Caso base
+
+Si `m` está vacío, no quedan caracteres por procesar. Por lo tanto, todo el mensaje original ya fue procesado y su resultado se encuentra en `acc`.
+
+La función devuelve:
+
+```scala
+acc
+```
+
+Por lo tanto, el resultado es exactamente el mensaje cifrado.
+
+### Caso recursivo
+
+Si `m` no está vacío, se toma su primer carácter.
+
+Si el carácter es una letra minúscula, se aplica el desplazamiento `k` y la letra resultante se agrega a `acc`. Esto mantiene el invariante porque el acumulador continúa representando correctamente la parte procesada del mensaje.
+
+Si el carácter no es una letra minúscula, se agrega sin modificar. Esto también mantiene el invariante, ya que los caracteres que no son letras minúsculas deben conservarse según el enunciado.
+
+Después de procesar el carácter, la función continúa con `m.tail`. Como el carácter actual ya fue incorporado correctamente al acumulador, el invariante se mantiene para la siguiente llamada.
+
+Por inducción sobre la cantidad de caracteres restantes, cuando el mensaje queda vacío, `acc` contiene exactamente el cifrado César de todo el mensaje. Por lo tanto:
+
+```text
+cesarCola(m, k) = cesar(m, k)
+```
+
+para los mensajes y desplazamientos permitidos por el enunciado.
+
+Además, como la llamada recursiva es la última operación de la función, la implementación utiliza recursión de cola.
+
+---
+
+## Punto 3. Corrección de `frecuencias`
+
+Para demostrar la corrección de `frecuencias`, se utiliza el siguiente invariante:
+
+> En cada llamada de `contar`, el mapa `acc` contiene exactamente la frecuencia de cada letra minúscula que ha sido procesada hasta ese momento.
+
+### Caso base
+
+Cuando `resto` está vacío, todos los caracteres del mensaje han sido procesados. Por el invariante, `acc` contiene exactamente la cantidad de apariciones de cada letra minúscula del mensaje.
+
+Por lo tanto, el mapa obtenido representa correctamente las frecuencias solicitadas.
+
+### Caso recursivo
+
+Si `resto` no está vacío, se toma su primer carácter `c`.
+
+Si `c` es una letra minúscula, se incrementa su frecuencia en el mapa:
+
+```scala
+acc.updated(c, acc.getOrElse(c, 0) + 1)
+```
+
+Esto agrega la letra con frecuencia `1` si no estaba presente, o incrementa en uno su frecuencia si ya aparecía. Por lo tanto, el mapa sigue representando exactamente las frecuencias de los caracteres procesados.
+
+Si `c` no es una letra minúscula, el mapa no cambia. Esto es correcto porque el enunciado indica que dichos caracteres deben ignorarse.
+
+En ambos casos se continúa recursivamente con `resto.tail`, manteniendo el invariante.
+
+Por inducción sobre la cantidad de caracteres restantes, al finalizar el recorrido el mapa contiene exactamente las frecuencias de todas las letras minúsculas del mensaje.
+
+### Corrección del ordenamiento
+
+Después de obtener las frecuencias, se convierten a una lista y se ordenan mediante:
+
+```scala
+.sortBy { case (letra, cantidad) => (-cantidad, letra) }
+```
+
+El valor `-cantidad` hace que las mayores frecuencias aparezcan primero. El segundo criterio, `letra`, hace que las letras con la misma frecuencia aparezcan en orden alfabético.
+
+El ordenamiento no modifica las cantidades calculadas, solamente cambia el orden en que se presentan. Por lo tanto, el resultado final cumple las dos condiciones de ordenamiento establecidas por el enunciado.
+
+En consecuencia, `frecuencias` devuelve exactamente las frecuencias de las letras minúsculas del mensaje, ignorando los demás caracteres y respetando el orden solicitado.
+
 
 ---
 

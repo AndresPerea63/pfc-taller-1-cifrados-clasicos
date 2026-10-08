@@ -174,6 +174,143 @@ pila a que termine el siguiente, y la pila crece una posición por cada letra
 del mensaje: para $n$ letras hay $n+1$ llamados activos a la vez, es decir,
 espacio $O(n)$.
 
+---
+
+
+## Punto 2. Cifrado César con recursión de cola
+
+La función `cesarCola` implementa el cifrado César utilizando recursión de cola y un acumulador. A diferencia de `cesar`, que construye el resultado al regresar de las llamadas recursivas, `cesarCola` va construyendo el resultado directamente en `acc`.
+
+La función recibe tres parámetros:
+
+```scala
+@tailrec
+final def cesarCola(
+  m: Mensaje,
+  k: Int,
+  acc: Mensaje = ""
+): Mensaje
+```
+
+El parámetro `m` contiene el mensaje que todavía falta procesar, `k` representa el desplazamiento y `acc` contiene el resultado que ya ha sido construido.
+
+Si el mensaje está vacío, se devuelve el acumulador:
+
+```scala
+if (m.isEmpty) acc
+```
+
+Si todavía quedan caracteres, se toma el primero mediante `m.head`. Cuando es una letra minúscula, se aplica el desplazamiento César y la nueva letra se agrega al acumulador. Si no es una letra minúscula, se agrega sin modificar.
+
+### Traza de `cesarCola("casa", 3)`
+
+El proceso de ejecución es:
+
+```text
+cesarCola("casa", 3, "")
+→ cesarCola("asa", 3, "f")
+→ cesarCola("sa", 3, "fd")
+→ cesarCola("a", 3, "fdv")
+→ cesarCola("", 3, "fdvd")
+→ "fdvd"
+```
+
+El resultado final es:
+
+```text
+"fdvd"
+```
+
+En cada llamado se procesa un carácter y se actualiza el acumulador. Por ejemplo, en el primer llamado se procesa `c`, que con un desplazamiento de 3 se convierte en `f`. El siguiente llamado continúa con `"asa"` y el acumulador `"f"`.
+
+### Pila de llamados
+
+En una recursión tradicional, los llamados anteriores deben esperar el resultado de la llamada recursiva. Por ejemplo, en `cesar`, mientras se procesa `"casa"` quedan llamados pendientes hasta llegar al caso base.
+
+En `cesarCola`, el llamado recursivo es la última operación que realiza la función. No queda ninguna operación posterior que dependa del resultado de ese llamado. Conceptualmente, los estados de la ejecución son:
+
+```mermaid
+flowchart TD
+    A["cesarCola('casa', 3, '')"] --> B["cesarCola('asa', 3, 'f')"]
+    B --> C["cesarCola('sa', 3, 'fd')"]
+    C --> D["cesarCola('a', 3, 'fdv')"]
+    D --> E["cesarCola('', 3, 'fdvd')"]
+    E --> F["Retorna 'fdvd'"]
+```
+
+Por esta razón, la función puede utilizar recursión de cola: el estado necesario para continuar está contenido en los parámetros del siguiente llamado, principalmente en `m` y `acc`. Esto evita mantener una cadena de operaciones pendientes como ocurre en la versión de recursión lineal.
+
+Por lo tanto, `cesarCola` produce el mismo resultado que `cesar`, pero cambia la forma en que se construye el resultado: la versión de cola lo construye durante el recorrido mediante el acumulador.
+
+---
+
+## Punto 3. Conteo de frecuencias
+
+La función `frecuencias` cuenta cuántas veces aparece cada letra minúscula en un mensaje. Para recorrer el mensaje utiliza una función auxiliar recursiva de cola llamada `contar`.
+
+El acumulador utilizado por `contar` es un mapa:
+
+```scala
+Map[Char, Int]
+```
+
+En este mapa, la clave representa una letra y el valor representa la cantidad de veces que ha aparecido.
+
+Cuando el carácter actual es una letra minúscula, se incrementa su contador:
+
+```scala
+acc.updated(c, acc.getOrElse(c, 0) + 1)
+```
+
+Si la letra todavía no aparece en el mapa, `getOrElse` devuelve `0`, por lo que se registra con frecuencia `1`. Si ya existe, se incrementa su frecuencia.
+
+Los caracteres que no sean letras minúsculas se ignoran y no se agregan al mapa.
+
+Cuando ya no quedan caracteres por procesar, se devuelve el mapa acumulado. Después se convierte a una lista y se ordena según las reglas del enunciado.
+
+Por ejemplo:
+
+```text
+frecuencias("casa")
+→ List(('a', 2), ('c', 1), ('s', 1))
+```
+
+La letra `a` aparece dos veces, mientras que `c` y `s` aparecen una vez.
+
+### Ordenamiento de las frecuencias
+
+El resultado se ordena mediante:
+
+```scala
+.sortBy { case (letra, cantidad) => (-cantidad, letra) }
+```
+
+El primer elemento de la pareja utilizada para ordenar es `-cantidad`, lo que permite obtener las frecuencias de mayor a menor. El segundo elemento es `letra`, por lo que cuando dos letras tienen la misma frecuencia se ordenan alfabéticamente.
+
+Por ejemplo, para:
+
+```text
+"banana"
+```
+
+las frecuencias son:
+
+```text
+a → 3
+n → 2
+b → 1
+```
+
+por lo que el resultado queda ordenado como:
+
+```text
+List(('a', 3), ('n', 2), ('b', 1))
+```
+
+No se incluyen caracteres que no sean letras minúsculas ni letras con frecuencia cero.
+
+El recorrido del mensaje es recursivo de cola porque la llamada a `contar` es la última operación realizada en cada paso. El acumulador mantiene toda la información necesaria para continuar el conteo sin tener que esperar resultados de llamadas recursivas anteriores.
+
 
 ---
 
